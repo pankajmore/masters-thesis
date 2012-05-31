@@ -47,7 +47,9 @@
 \newtheorem{prop}[theorem]{Proposition}
 \newtheorem{remark}[theorem]{Remark}
 
+\usepackage[square, numbers, sort]{natbib}
 \usepackage{lipsum}
+\usepackage[hidelinks]{hyperref}
 %=====================================================================
 % End of Preamble, start of document
 %
@@ -74,16 +76,6 @@
 %% \include{appendix_something}          
 
 %=====================================================================
-% BIBLIOGRAPHY
-%   This should follow the appendices, if any, otherwise summary and
-%   conclusions chapter.
-% Choose your bibliography style
-% plain is the basic style, others include ieeetr, siam, asm, etc
-\bibliographystyle{plain}
-% Add the bib file
-%% \bibliography{bibfile}
-
-%=====================================================================
 % PUBLICATIONS
 %  publications if any may be listed after the literature cited.
 %% \include{mypubs}
@@ -96,7 +88,13 @@
 I thank the many people who have done lots of nice things for me.
 \end{acknowledgments}
 
-\chapter{Lorem ipsum}
+\chapter{Introduction: SMT solvers}
 \lipsum
+
+\include{references}
+
+\bibliographystyle{plainnat}
+\bibliography{citations}
+\nocite{*}
 
 \end{document}
