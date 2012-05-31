@@ -87,11 +87,18 @@ a few lines of code. We also discuss other opportunities where our system might 
 use.
 \end{abstract}
 
+\begin{acknowledgments}
+I thank the many people who have done lots of nice things for me.
+\end{acknowledgments}
 
 %--------------------------------------------------------------------%
 % CONTENTS, TABLES, FIGURES
 \tableofcontents
-\listoftables
-\listoffigures
+
+\cleardoublepage
+\phantomsection \label{listoffig}
+\addcontentsline{toc}{chapter}{List of Figures}
+\listof{program}{List of Figures}
+%\listoffigures
 
 \cleardoublepage\pagenumbering{arabic} % Make the page numbers Arabic (1, 2, etc)

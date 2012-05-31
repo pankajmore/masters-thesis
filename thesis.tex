@@ -47,9 +47,26 @@
 \newtheorem{prop}[theorem]{Proposition}
 \newtheorem{remark}[theorem]{Remark}
 
-\usepackage[square, numbers, sort]{natbib}
+\usepackage[sorting=none, maxbibnames=99, minbibnames=99]{biblatex}
+\bibliography{citations}
+\usepackage{amsmath}
 \usepackage{lipsum}
 \usepackage[hidelinks]{hyperref}
+\usepackage[kerning]{microtype}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{float}
+
+\floatstyle{ruled}
+\newfloat{program}{thp}{lop}
+\floatname{program}{Figure}
+
+\numberwithin{program}{chapter}
+
+%\DeclareCaptionType{program}[Figure][List of figures]
+
+%\usepackage{setspace}
+\AtBeginEnvironment{program}{\singlespace}
+
 %=====================================================================
 % End of Preamble, start of document
 %
@@ -88,13 +105,9 @@
 I thank the many people who have done lots of nice things for me.
 \end{acknowledgments}
 
-\chapter{Introduction: SMT solvers}
-\lipsum
+\include{intro}
 
-\include{references}
-
-\bibliographystyle{plainnat}
-\bibliography{citations}
+\printbibliography
 \nocite{*}
 
 \end{document}
