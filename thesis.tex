@@ -47,15 +47,23 @@
 \newtheorem{prop}[theorem]{Proposition}
 \newtheorem{remark}[theorem]{Remark}
 
+\usepackage{minted}
+\usemintedstyle{bw}
+
+\usepackage{fontspec}
+\setmonofont[Scale=0.85]{DejaVu Sans Mono}
+
 \usepackage[sorting=none, maxbibnames=99, minbibnames=99]{biblatex}
 \bibliography{citations}
 \usepackage{amsmath}
 \usepackage{lipsum}
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
-\usepackage[kerning]{microtype}
+\usepackage{microtype}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{fancyref}
+
+
 
 \floatstyle{ruled}
 \newfloat{program}{thp}{lop}

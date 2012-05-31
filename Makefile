@@ -2,10 +2,10 @@
 all: thesis.pdf
 
 thesis.pdf: $(wildcard *.tex) citations.bib
-	pdflatex thesis
+	lualatex -shell-escape thesis
 	bibtex thesis
-	pdflatex thesis
-	pdflatex thesis
+	lualatex -shell-escape thesis
+	lualatex -shell-escape thesis
 
 .PHONY: clean
 

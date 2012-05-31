@@ -21,7 +21,7 @@ asks Z3 whether the simple proposition $p \wedge \neg p$ is satisfiable.
 \begin{program}
 \caption{A C program to ask Z3 whether $p \wedge \neg p$ is satisfiable}
 \label{fig:c-prop}
-\begin{verbatim}
+\begin{minted}{c}
 Z3_config cfg = Z3_mk_config();
 Z3_context ctx = Z3_mk_context(cfg);
 Z3_del_config(cfg);
@@ -41,7 +41,7 @@ Z3_lbool sat = Z3_check(ctx);
 
 Z3_del_context(ctx);
 return sat;
-\end{verbatim}
+\end{minted}
 \end{program}
 
 Simultaneously, most SMT solvers also feature interaction via the standard
@@ -52,14 +52,14 @@ like \Fref{fig:smtlib-prop}.
 \begin{program}
 \caption{An SMT-LIB program to check whether $p \wedge \neg p$ is satisfiable}
 \label{fig:smtlib-prop}
-\begin{verbatim}
+\begin{minted}{scheme}
 ; Declare a variable we don't know the value of yet
 (declare-fun p () Bool)
 ; Try to find a value satisfying a contradiction
 (assert (and p (not p)))
 (check-sat)
 ; Prints "unsat", meaning "unsatisfiable"
-\end{verbatim}
+\end{minted}
 \end{program}
 
 However, the SMT-LIB interfaces are generally hard to use directly from C
@@ -85,13 +85,13 @@ as the SMT-LIB version.
 \begin{program}
 \caption{Using \texttt{z3.rkt} to determine whether $p \wedge \neg p$ is satisfiable}
 \label{fig:rkt-prop}
-\begin{verbatim}
+\begin{minted}{scheme}
 (smt:with-context
  (smt:new-context)
  (smt:declare-fun p () Bool)
  (smt:assert (and/s p (not/s p)))
  (smt:check-sat))
-\end{verbatim}
+\end{minted}
 \end{program}
 
 \section{Interactive SMT solving}
@@ -104,10 +104,12 @@ such that no row, column, or 3$\times$3 box has two instances of a number. This
 is a classic constraint satisfaction problem, and any constraint solver can
 handle it with ease.
 
-A Racket program using \texttt{z3.rkt} to solve Sudoku would look like the
-following:
+\Fref{fig:sudoku} lists a Racket program using \texttt{z3.rkt} to solve Sudoku.
 
-\begin{verbatim}
+\begin{program}
+\caption{Racket code using \texttt{z3.rkt} to solve Sudoku}
+\label{fig:sudoku}
+\begin{minted}{scheme}
 (define (solve-sudoku grid)
   (smt:with-context
    (smt:new-context)
@@ -127,7 +129,8 @@ following:
        (for/list ([x (in-range 0 81)])
          (smt:eval (select/s sudoku-grid x)))
        #f)))
-\end{verbatim}
+\end{minted}
+\end{program}
 
 Here we omit a couple of function definitions: \texttt{add-sudoku-grid-rules}
 asserts the standard Sudoku grid rules, and \texttt{add-grid} reads a
@@ -150,7 +153,9 @@ In such situations, the interactivity offered by \texttt{z3.rkt} becomes
 useful: it lets the programmer add dynamically discovered constraints on the
 fly. The last part of the program then becomes
 
-\begin{verbatim}
+\begin{program}
+\caption{Ensuring that a Sudoku grid has exactly one solution}
+\begin{minted}{scheme}
    ...
    (if (eq? sat 'sat)
        ; Make sure no other solution exists
@@ -167,7 +172,8 @@ fly. The last part of the program then becomes
              #f ; Multiple solutions
              result-grid))
        #f)))
-\end{verbatim}
+\end{minted}
+\end{program}
 
 This part can even be abstracted out into a function that returns a lazily-
 generated sequence of satisfying assignments for any given set of constraints.
