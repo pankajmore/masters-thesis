@@ -14,12 +14,13 @@ testing~\cite{Godefroid:08} and bounded model checking~\cite{Armando:09}.
 Yet, SMT solvers are only used by a small number of experts. It isn't hard to
 see why: the standard way for programs to interact with SMT solvers like
 Z3~\cite{z3}, Yices~\cite{yices} and CVC3~\cite{cvc3} is via powerful but
-relatively arcane C APIs that require the users to know the particular solver's
-internals. For example, here is a C program that asks Z3 whether the simple
-proposition $p \wedge \neg p$ is satisfiable.
+relatively arcane C APIs that require the users to know the particular
+solver's internals. For example, \Fref{fig:c-prop} lists a C program that
+asks Z3 whether the simple proposition $p \wedge \neg p$ is satisfiable.
 
 \begin{program}
-\caption{Z3}
+\caption{A C program to ask Z3 whether $p \wedge \neg p$ is satisfiable}
+\label{fig:c-prop}
 \begin{verbatim}
 Z3_config cfg = Z3_mk_config();
 Z3_context ctx = Z3_mk_context(cfg);
@@ -43,10 +44,14 @@ return sat;
 \end{verbatim}
 \end{program}
 
-Simultaneously, most SMT solvers also feature interaction via the standard input
-language SMT-LIB~\cite{smtlib2:10}. SMT-LIB is \textit{significantly} easier to
-use in isolation. The same program in SMT-LIB would look something like
+Simultaneously, most SMT solvers also feature interaction via the standard
+input language SMT-LIB~\cite{smtlib2:10}. SMT-LIB is \textit{significantly}
+easier to use in isolation. The same program in SMT-LIB would look something
+like \Fref{fig:smtlib-prop}.
 
+\begin{program}
+\caption{An SMT-LIB program to ask Z3 whether $p \wedge \neg p$ is satisfiable}
+\label{fig:smtlib-prop}
 \begin{verbatim}
 ; Declare a variable we don't know the value of yet
 (declare-fun p () Bool)
@@ -55,6 +60,7 @@ use in isolation. The same program in SMT-LIB would look something like
 (check-sat)
 ; Prints "unsat", meaning "unsatisfiable"
 \end{verbatim}
+\end{program}
 
 However, the SMT-LIB interfaces are generally hard to use directly from C
 programs and often not as full-featured\footnote{Z3, for instance, supports
