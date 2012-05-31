@@ -50,7 +50,7 @@ easier to use in isolation. The same program in SMT-LIB would look something
 like \Fref{fig:smtlib-prop}.
 
 \begin{program}
-\caption{An SMT-LIB program to ask Z3 whether $p \wedge \neg p$ is satisfiable}
+\caption{An SMT-LIB program to check whether $p \wedge \neg p$ is satisfiable}
 \label{fig:smtlib-prop}
 \begin{verbatim}
 ; Declare a variable we don't know the value of yet
@@ -79,9 +79,12 @@ because of its extensive facilities for implementing new languages~\cite
 {Tobin-Hochstadt:11}, not just for the interface to the solver, but also for
 the resulting tools that the solver would make possible.
 
-Using this system, the program above becomes almost as brief as the SMT-LIB
-version.
+Using this system, the program (\Fref{fig:rkt-prop}) becomes almost as brief
+as the SMT-LIB version.
 
+\begin{program}
+\caption{Using \texttt{z3.rkt} to determine whether $p \wedge \neg p$ is satisfiable}
+\label{fig:rkt-prop}
 \begin{verbatim}
 (smt:with-context
  (smt:new-context)
@@ -89,6 +92,7 @@ version.
  (smt:assert (and/s p (not/s p)))
  (smt:check-sat))
 \end{verbatim}
+\end{program}
 
 \section{Interactive SMT solving}
 \label{sec:interactive}
