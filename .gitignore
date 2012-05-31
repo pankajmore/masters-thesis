@@ -1,0 +1,14 @@
+*~
+*.aux
+*.log
+*.out
+*.snm
+*.toc
+*.nav
+*.bbl
+*.blg
+*.pdf
+*.lof
+*.lot
+*.synctex.gz
+*.sublime-workspace
