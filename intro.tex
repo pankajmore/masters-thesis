@@ -151,10 +151,12 @@ second solution exists and the puzzle is considered invalid.
 
 In such situations, the interactivity offered by \texttt{z3.rkt} becomes
 useful: it lets the programmer add dynamically discovered constraints on the
-fly. The last part of the program then becomes
+fly. The last part of the solution might then become something like
+\Fref{fig:sudoku-unique}.
 
 \begin{program}
 \caption{Ensuring that a Sudoku grid has exactly one solution}
+\label{fig:sudoku-unique}
 \begin{minted}{scheme}
    ...
    (if (eq? sat 'sat)
@@ -175,5 +177,6 @@ fly. The last part of the program then becomes
 \end{minted}
 \end{program}
 
-This part can even be abstracted out into a function that returns a lazily-
-generated sequence of satisfying assignments for any given set of constraints.
+This part can even be abstracted out into a function that returns a
+lazily-generated sequence of satisfying assignments for any given set of
+constraints.
