@@ -1,7 +1,7 @@
 
 all: thesis.pdf
 
-thesis.pdf: $(wildcard *.tex) citations.bib
+thesis.pdf: $(wildcard *.tex) citations.bib $(wildcard *.cls)
 	lualatex -shell-escape thesis
 	bibtex thesis
 	lualatex -shell-escape thesis
