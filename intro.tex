@@ -1,5 +1,5 @@
 \chapter{Introduction: SMT solvers and interfaces}
-\label{sec:motiv}
+\label{chap:intro}
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
@@ -67,7 +67,7 @@ like \Fref{fig:smtlib-prop}.
 The complexity of the C interface keeps going up as we move to less trivial
 assertions. \Fref{fig:c-simultaneous} is a C program that asks Z3 to solve the
 two simultaneous equations $2x\,+\,3y = 5, 4x\,+\,5y = 7$. (The solution is $x =
--2, y = 3$).
+-2, y = 3$.)
 
 \begin{program}
 \caption{A C program to ask Z3 to solve two simultaneous linear equations}
@@ -145,14 +145,28 @@ that \textit{interact} with the solver in some way, for example by adding
 assertions based on generated models. This makes it difficult to build new
 abstractions to enhance functionality.
 
-To overcome these difficulties, we decided to implement an SMT-LIB-like
-interface in a way that allowed for the same power as the C interface while
-appearing naturally integrated into a host language. Since SMT-LIB is {\em
+\subsection*{Summary}
+
+In this chapter, we saw what SMT solvers are, how they work, and the power
+that they have. We also saw why few programmers use them now, instead
+preferring to hand-code cumbersome search and backtracking algorithms.
+
+\chapter{A new interface: \texttt{z3.rkt}}
+
+In \Fref[plain]{chap:intro}, we demonstrated how cumbersome SMT solvers are to
+use. Indeed, we faced the same issues while exploring novel methods to verify,
+debug and test functional programs. It felt like the C interface was
+hamstringing us, and the SMT-LIB interface was good for basic explorations but
+not anything more complicated.
+
+We decided to attempt to solve this: our goal was to implement an SMT-LIB-like interface
+in a way that allowed for the same power as the C interface while appearing
+naturally integrated into a host language. Since SMT-LIB is {\em
 s-expression}-based, for the host language a Lisp dialect was a natural
 choice. We chose Racket~\cite{racket} for our implementation, \texttt{z3.rkt},
-because of its extensive facilities for implementing new languages~\cite
-{Tobin-Hochstadt:11}, not just for the interface to the solver, but also for
-the resulting tools that the solver would make possible.
+because of its extensive facilities for implementing new 
+languages~\cite{Tobin-Hochstadt:11}, not just for the interface to the solver,
+but also for the resulting tools that the solver would make possible.
 
 Using this system, the program to check whether a contradiction is satisfiable
 (\Fref{fig:rkt-prop}) becomes almost as brief as the SMT-LIB version. The
@@ -189,8 +203,8 @@ similarly brief.
 \section{Interactive SMT solving: two examples}
 \label{sec:interactive}
 
-To demonstrate how the interaction of a language with an SMT solver is useful, we
-turn our attention to a pair of classic logical puzzles.
+To demonstrate the value in integrating a language with an SMT solver, we turn
+our attention to a pair of classic logical puzzles.
 
 \subsection{Sudoku}
 
