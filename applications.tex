@@ -137,7 +137,9 @@ Using the method discussed in Section~\ref{sec:quantified}, we can write
 \texttt{qsort}. Then we can verify the length property for all input lists up
 to a certain length \texttt{n}.
 
-\begin{verbatim}
+\begin{program}
+\caption{Verifying length for quicksort}
+\begin{minted}{scheme}
 (smt:with-context
  (smt:new-context)
  (define qsort (make-qsort n))
@@ -149,7 +151,8 @@ to a certain length \texttt{n}.
  ; prove the length property by asserting its negation
  (smt:assert (not/s (=/s (len xs) (len (qsort xs)))))
  (smt:check-sat))
-\end{verbatim}
+\end{minted}
+\end{program}
 
 Proving a property is done by checking that its negation is unsatisfiable. A
 quicksort works \textit{correctly}\footnote{Here correctness is in the context
