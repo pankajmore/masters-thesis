@@ -62,6 +62,81 @@ like \Fref{fig:smtlib-prop}.
 \end{minted}
 \end{program}
 
+\hl{TOCHECK Simultaneous linear equations are new.}
+
+The complexity of the C interface keeps going up as we move to less trivial
+assertions. \Fref{fig:c-simultaneous} is a C program that asks Z3 to solve the
+two simultaneous equations $2x + 3y = 5, 4x + 5y = 7$. (The solution is $x =
+-2, y = 3$).
+
+\begin{program}
+\caption{A C program to ask Z3 to solve two simultaneous linear equations}
+\label{fig:c-simultaneous}
+\begin{minted}{c}
+Z3_config cfg = Z3_mk_config();
+Z3_set_param_value(cfg, "MODEL", "true");
+Z3_context ctx = Z3_mk_context(cfg);
+Z3_del_config(cfg);
+
+Z3_sort int_sort = Z3_mk_int_sort(ctx);
+
+Z3_symbol symbol_x = Z3_mk_int_symbol(ctx, 0);
+Z3_symbol symbol_y = Z3_mk_int_symbol(ctx, 1);
+
+Z3_ast x = Z3_mk_const(ctx, symbol_x, int_sort);
+Z3_ast y = Z3_mk_const(ctx, symbol_x, int_sort);
+Z3_ast num2 = Z3_mk_int(ctx, 2, int_sort);
+Z3_ast num3 = Z3_mk_int(ctx, 3, int_sort);
+Z3_ast num4 = Z3_mk_int(ctx, 4, int_sort);
+Z3_ast num5 = Z3_mk_int(ctx, 5, int_sort);
+Z3_ast num7 = Z3_mk_int(ctx, 7, int_sort);
+
+Z3_ast eq1 = Z3_mk_eq(ctx, Z3_mk_add(ctx, Z3_mk_mul(ctx, num2, x),
+                                          Z3_mk_mul(ctx, num3, y)),
+                           num5);
+Z3_ast eq2 = Z3_mk_eq(ctx, Z3_mk_add(ctx, Z3_mk_mul(ctx, num4, x),
+                                          Z3_mk_mul(ctx, num5, y)),
+                           num7);
+
+Z3_assert_cnstr(ctx, eq1);
+Z3_assert_cnstr(ctx, eq2);
+
+Z3_model m;
+Z3_lbool sat = Z3_check_and_get_model(ctx, &m);
+
+// Z3_L_TRUE means satisfied
+if (sat == Z3_L_TRUE) {
+  Z3_ast xsolved, ysolved;
+  // Omitting some error checking
+  Z3_eval(ctx, m, x, &xsolved);
+  Z3_eval(ctx, m, x, &ysolved);
+  int xval, yval;
+  Z3_get_numeral_int(ctx, xsolved, &xval);
+  Z3_get_numeral_int(ctx, xsolved, &yval);
+  printf("x = %d, y = %d", xval, yval);
+}
+else {
+  printf("No solution to equations");
+}
+\end{minted}
+\end{program}
+
+The SMT-LIB interface is still remarkably brief, though (\Fref{fig:smtlib-simultaneous}).
+
+\begin{program}
+\caption{SMT-LIB code to solve two simultaneous linear equations}
+\label{fig:smtlib-simultaneous}
+\begin{minted}{scheme}
+(declare-fun x () Int)
+(declare-fun y () Int)
+(assert (= (+ (* 2 x) (* 3 y)) 5))
+(assert (= (+ (* 4 x) (* 5 y)) 7))
+(check-sat)
+(eval x)
+(eval y)
+\end{minted}
+\end{program}
+
 However, the SMT-LIB interfaces are generally hard to use directly from C
 programs and often not as full-featured\footnote{Z3, for instance, supports
 plugging in external theories via the C API, but not via the textual SMT-LIB
@@ -79,8 +154,10 @@ because of its extensive facilities for implementing new languages~\cite
 {Tobin-Hochstadt:11}, not just for the interface to the solver, but also for
 the resulting tools that the solver would make possible.
 
-Using this system, the program (\Fref{fig:rkt-prop}) becomes almost as brief
-as the SMT-LIB version.
+Using this system, the program to check whether a contradiction is satisfiable
+(\Fref{fig:rkt-prop}) becomes almost as brief as the SMT-LIB version. The
+program to solve two simultaneous linear equations (\Fref{fig:rkt-simultaneous}) is
+similarly brief.
 
 \begin{program}
 \caption{Using \texttt{z3.rkt} to determine whether $p \wedge \neg p$ is satisfiable}
@@ -91,6 +168,21 @@ as the SMT-LIB version.
  (smt:declare-fun p () Bool)
  (smt:assert (and/s p (not/s p)))
  (smt:check-sat))
+\end{minted}
+\end{program}
+
+\begin{program}
+\caption{Solving simultaneous linear equations with \texttt{z3.rkt}}
+\label{fig:rkt-simultaneous}
+\begin{minted}{scheme}
+(smt:with-context
+ (smt:new-context)
+ (smt:declare-fun x () Int)
+ (smt:declare-fun y () Int)
+ (smt:assert (=/s (+/s (*/s 2 x) (*/s 3 y)) 5))
+ (smt:assert (=/s (+/s (*/s 4 x) (*/s 5 y)) 7))
+ (smt:check-sat)
+ (values (smt:eval x) (smt:eval y)))
 \end{minted}
 \end{program}
 
