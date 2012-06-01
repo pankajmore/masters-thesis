@@ -241,9 +241,10 @@ functions, each corresponding to one of the tasks above.
       (map smt:eval vars)
       #f))
 
-; (c) How many digits the computer got correct. If a digit is correct
-; then we assign it the value 1, otherwise 0. We sum up the values
-; and assert that that's equal to the number of correct digits.
+; (c) How many digits the computer got correct. If a digit is
+; correct then we assign it the value 1, otherwise 0. We sum up
+; the values and assert that that's equal to the number of correct
+; digits.
 (define (add-guess vars guess correct-digits)
   (define correct-lhs
     (apply +/s
