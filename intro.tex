@@ -94,15 +94,18 @@ as the SMT-LIB version.
 \end{minted}
 \end{program}
 
-\section{Interactive SMT solving}
+\section{Interactive SMT solving: two examples}
 \label{sec:interactive}
 
-We now turn our attention to a problem that demonstrates how the interaction of
-a language with an SMT solver is useful. A Sudoku puzzle asks the player to
-complete a partially pre-filled 9$\times$9 grid with the numbers 1 through 9
-such that no row, column, or 3$\times$3 box has two instances of a number. This
-is a classic constraint satisfaction problem, and any constraint solver can
-handle it with ease.
+To demonstrate how the interaction of a language with an SMT solver is useful, we
+turn our attention to a pair of classic logical puzzles.
+
+\subsection{Sudoku}
+
+A Sudoku puzzle asks the player to complete a partially pre-filled 9$\times$9
+grid with the numbers 1 through 9 such that no row, column, or 3$\times$3 box
+has two instances of a number. This is a classic constraint satisfaction
+problem, and any constraint solver can handle it with ease.
 
 \Fref{fig:sudoku} lists a Racket program using \texttt{z3.rkt} to solve Sudoku.
 
@@ -180,3 +183,75 @@ fly. The last part of the solution might then become something like
 This part can even be abstracted out into a function that returns a
 lazily-generated sequence of satisfying assignments for any given set of
 constraints.
+
+\subsection{Number Mind}
+
+\hl{TOCHECK This section is brand new.}
+
+The deductive game Bulls and Cows, commercialised as
+Master~Mind~\cite{mastermind}, is popular all around the world. The rules may
+vary slightly, but their essence stays the same: Two players play the game.
+One player (we'll call her Alice) thinks of a 4-digit number, and the other
+(Bob) tries to find it. Bob guesses a number, and Alice tells him how many
+digits he has correct and in the correct position (\textit{bulls}) and how
+many he has correct but in the wrong position (\textit{cows}).
+
+The game is deceptively simple: while even the standard 4-digit variant is
+challenging for humans, the general problem for $n$ digits is
+NP-complete~\cite{mastermindnpc}. As such, it becomes an interesting problem for
+constraint solvers.
+
+For simplicity, we tackle a variant of the game:
+Number~Mind~\cite{numbermind}, where Bob only tells Alice how many digits are
+correct and in the correct place (bulls). The user is Alice and the computer
+Bob, which means that the game is \textit{interactive}. An API to solve
+Number~Mind would have
+
+\begin{enumerate}[(a)]
+\item a way to tell the computer how many digits the number has
+\item a way for the computer to guess a number
+\item a way for the user to tell the computer how many digits it got correct
+  in the last guess.
+\end{enumerate}
+
+The constraint solver would have an important role in not just (a) and (c) but
+also (b), since we would like the computer to make ``reasonable" guesses and
+not just wild ones.
+
+Our system makes all three tasks simple. \Fref{fig:numbermind} defines three
+functions, each corresponding to one of the tasks above.
+
+\begin{program}
+\caption{Solving Number Mind using \texttt{z3.rkt}}
+\label{fig:numbermind}
+\begin{minted}{scheme}
+; (a) Create variables for each digit
+(define (make-variables num-digits)
+  (define vars (smt:make-fun/list num-digits () Int))
+  ; Every variable is between 0 and 9
+  (for ([var vars]) (smt:assert (and/s (>=/s var 0) (<=/s var 9))))
+  vars)
+
+; (b) Guess a number. Returns the guess as a list of digits,
+; or #f meaning no number can satisfy all the constraints.
+(define (get-new-guess vars)
+  (define sat (smt:check-sat))
+  (if (eq? sat 'sat)
+      ; Get a guess from the SMT solver
+      (map smt:eval vars)
+      #f))
+
+; (c) How many digits the computer got correct. If a digit is correct
+; then we assign it the value 1, otherwise 0. We sum up the values
+; and assert that that's equal to the number of correct digits.
+(define (add-guess vars guess correct-digits)
+  (define correct-lhs
+    (apply +/s
+           (for/list ([x guess]
+                      [var vars])
+             (ite/s (=/s var x)
+                    1      ; Correct guess
+                    0))))  ; Wrong guess
+  (smt:assert (=/s correct-lhs correct-digits)))
+\end{minted}
+\end{program}
