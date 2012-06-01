@@ -73,10 +73,8 @@
 
 \numberwithin{program}{chapter}
 
-%\DeclareCaptionType{program}[Figure][List of figures]
-
-%\usepackage{setspace}
-\AtBeginEnvironment{program}{\singlespace}
+\BeforeBeginEnvironment{program}{\begin{singlespace}}
+\AfterEndEnvironment{program}{\end{singlespace}}
 
 %=====================================================================
 % End of Preamble, start of document
