@@ -17,11 +17,11 @@ functions directly but add a \texttt{/s} suffix to their usual names in the
 SMT-LIB standard, because most SMT-LIB names are already defined as functions
 by Racket and we want to avoid colliding with them.
 
-\subsubsection{The core commands.} This is a small set of Racket macros and functions
-layered on top of the Z3 wrapper. As noted in Section~\ref{sec:motiv}, the aim
-here is to hide the complexities of the C wrapper and stay as close to SMT-LIB
-version 2 commands \cite{smtlib2:10} as possible. We prefix commands with
-\texttt{smt:} to avoid collisions with Racket functions.
+\subsubsection{The core commands.} This is a small set of Racket macros and
+functions layered on top of the Z3 wrapper. The aim here is to hide the
+complexities of the C wrapper (as discussed in \Fref[plain]{sec:usingsmt}) and
+stay as close to SMT-LIB version 2 commands \cite{smtlib2:10} as possible. We
+prefix commands with \texttt{smt:} to avoid collisions with Racket functions.
 
 \subsection{Derived Abstractions}
 \label{sec:derived}
