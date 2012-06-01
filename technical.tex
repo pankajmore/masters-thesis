@@ -87,16 +87,17 @@ transformation.
 \hl{TOCHECK The bit from here until the end of the section is new.}
 
 The definition of \texttt{smt:define-fun} is listed in \Fref{fig:define-fun}.
-We use Scheme's \texttt{syntax-rules} macro system to its fullest extent.
-\texttt{syntax-rules} accepts pairs of input and output patterns and goes with
-the output pattern for the first input that can be matched, somewhat like the
-\texttt{cond} construct found in many Lisps. We handle two separate cases: (a)
-we're defining a plain identifier, in which case we have no need for the
-\texttt{forall}, and (b) we're defining a macro as above, in which case we do.
-The \texttt{...} as part of the macro definition is a special form recognized
-by \texttt{syntax-rules}: wherever it sees them in the output pattern, it
-substitutes for them a list of whatever was present in the input pattern. An
-example of this substitution is listed in \Fref{fig:define-fun-example}.
+We use Scheme's \texttt{syntax-rules} macro system \cite[Section~4.3.2]{scheme-r5rs}
+to its fullest extent. \texttt{syntax-rules} accepts pairs of input and output
+patterns and goes with the output pattern for the first input that can be
+matched, somewhat like the \texttt{cond} construct found in many Lisps. We
+handle two separate cases: (a) we're defining a plain identifier, in which
+case we have no need for the \texttt{forall}, and (b) we're defining a macro
+as above, in which case we do. The \texttt{...} as part of the macro
+definition is a special form recognized by \texttt{syntax-rules}: wherever it
+sees them in the output pattern, it substitutes for them a list of whatever
+was present in the input pattern. An example of this substitution is listed in
+\Fref{fig:define-fun-example}.
 
 \begin{program}
 \caption{A routine for defining macros in \texttt{z3.rkt}}
