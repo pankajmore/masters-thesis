@@ -64,7 +64,7 @@ formula, and returns an updated formula or \texttt{\#f}}
 \end{minted}
 \end{program}
 
-There are two key insights that can be made at each step:
+There are two key insights that can be made here:
 
 \begin{enumerate}
 
@@ -90,8 +90,16 @@ c \vee \neg d, \neg b \vee \neg c \vee d\}$.
 
 \end{enumerate}
 
-The backtracking algorithm plus these two insights form the core of the
-Davis-Putnam-Logemann-Loveland (DPLL) algorithm~\cite{dpll1,dpll2}.
+The backtracking algorithm, plus these two insights applied at each step, form
+the core of the Davis-Putnam-Logemann-Loveland (DPLL)
+algorithm~\cite{dpll1,dpll2}. The DPLL algorithm, although over fifty years
+old, is tremendously successful and forms the core of many modern complete SAT
+solvers\footnote{A \textit{complete} SAT solver is one where a definitive
+answer is returned, whether a formula is satisfiable or not. There are also
+\textit{incomplete} SAT solvers which return an answer if the formula is
+satisfiable but do not return one if it is not. Examples include GSAT and
+WalkSat~\cite{walksat}.}, including Chaff~\cite{chaff}, GRASP~\cite{grasp} and
+MiniSat~\cite{minisat}.
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
