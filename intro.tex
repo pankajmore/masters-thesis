@@ -99,7 +99,10 @@ answer is returned, whether a formula is satisfiable or not. There are also
 \textit{incomplete} SAT solvers which return an answer if the formula is
 satisfiable but do not return one if it is not. Examples include GSAT and
 WalkSat~\cite{walksat}.}, including Chaff~\cite{chaff}, GRASP~\cite{grasp} and
-MiniSat~\cite{minisat}.
+MiniSat~\cite{minisat}. Of course, modern SAT solvers employ a large number of
+heuristic and optimisation tricks to speed things up.
+
+\section{SMT: SAT with a twist}
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
