@@ -82,7 +82,7 @@ Our system makes defining a series of macros like this very easy, as shown in
 (define (make-length n)
   (smt:define-fun len ((xs (List Int))) Int
     (if (zero? n)
-        0
+        0         ; len-0 always returns 0
         (ite/s (=/s xs nil/s)
                0
                (let ([sublen (make-length (sub1 n))])
@@ -99,8 +99,8 @@ reduces to the series of macros defined above up to length \texttt{n}.
 
 It is easy to define other bounded recursive functions along the same lines
 that reverse lists, concatenate them, filter them on a predicate and much
-more. For example, \Fref{fig:reverse-rkt} creates bounded recursive functions
-that reverse a list (using an accumulator).
+more. For example, \Fref{fig:reverse-rkt} defines a function that creates
+bounded recursive functions that reverse a list (using an accumulator).
 
 \begin{program}
 \caption{A bounded recursive function to reverse lists up to length \texttt{n}}
@@ -111,7 +111,7 @@ that reverse a list (using an accumulator).
   (define (make-reverse-internal n)
     (smt:define-fun reversen ((xs IntList) (accum IntList)) IntList
       (if (zero? n)
-          accum
+          accum     ; reverse-0 always returns the accumulated list
           ; Recursive step: generate function for n-1
           (let ([subreverse (make-reverse-internal (sub1 n))])
             (ite/s (=/s xs nil/s)
