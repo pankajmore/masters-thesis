@@ -99,7 +99,32 @@ reduces to the series of macros defined above up to length \texttt{n}.
 
 It is easy to define other bounded recursive functions along the same lines
 that reverse lists, concatenate them, filter them on a predicate and much
-more. Using these building blocks we can now verify properties of recursive
+more. For example, \Fref{fig:reverse-rkt} creates bounded recursive functions
+that reverse a list (using an accumulator).
+
+\begin{program}
+\caption{A bounded recursive function to reverse lists up to length \texttt{n}}
+\label{fig:reverse-rkt}
+\begin{minted}{scheme}
+(define (make-reverse n)
+  ; We're using an accumulator so create an internal function
+  (define (make-reverse-internal n)
+    (smt:define-fun reversen ((xs IntList) (accum IntList)) IntList
+      (if (zero? n)
+          accum
+          ; Recursive step: generate function for n-1
+          (let ([subreverse (make-reverse-internal (sub1 n))])
+            (ite/s (=/s xs nil/s)
+                   accum
+                   (subreverse (tail/s xs) (insert/s (head/s xs)
+                                                     accum))))))
+    reversen)
+  (define reverse (make-reverse-internal n))
+  (lambda (xs) (reverse xs nil/s)))
+\end{minted}
+\end{program}
+
+Using these building blocks we can now verify properties of recursive
 functions.
 
 \section{Verifying recursive functions}
