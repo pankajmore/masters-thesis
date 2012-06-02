@@ -157,10 +157,46 @@ buggy case, the length of the output will be different whenever a pivot is
 repeated in the rest of the list. So comparing the two lengths is a good
 property to verify.
 
+\hl{TOCHECK the definition of quicksort is new.}
+
 Using the method discussed in Section~\ref{sec:quantified}, we can write
 \texttt{make-qsort} that generates bounded recursive versions of
-\texttt{qsort}. Then we can verify the length property for all input lists up
-to a certain length \texttt{n}.
+\texttt{qsort}. We believe that both automatic and manual methods would be
+feasible (\Fref{fig:qsort-smt} is a manual translation).
+
+\begin{program}
+
+\caption[A bounded recursive version of quicksort]{A bounded recursive version
+of quicksort (cf \Fref{fig:qsort}). \texttt{make-le} and \texttt{make-gt}
+create functions to filter lists based on their relation to \texttt{pivot},
+respectively \texttt{<=} and \texttt{>}. \texttt{make-append} creates
+functions to append lists}
+
+\label{fig:qsort-smt}
+\begin{minted}{scheme}
+(define (make-qsort n lessop-fn greaterop-fn)
+  (smt:define-fun qsort ((xs IntList)) IntList
+    (if (zero? n)
+        nil/s
+        ; From here on is the usual definition of quicksort.
+        (ite/s (=/s xs nil/s)
+               nil/s
+               (let* ([subqsort (make-qsort (sub1 n))]
+                      [pivot (head/s xs)]
+                      [rest (tail/s xs)]
+                      [left-sorted
+                       (subqsort ((make-le (sub1 n)) pivot rest))]
+                      [right-sorted
+                       (subqsort ((make-gt (sub1 n)) pivot rest))])
+                 ((make-append (sub1 n)) left-sorted
+                                         (insert/s pivot
+                                                   right-sorted))))))
+  qsort)
+\end{minted}
+\end{program}
+
+With \texttt{make-qsort} we can now verify the length property for all input
+lists up to a certain length \texttt{n}.
 
 \begin{program}
 \caption{Verifying length for quicksort}
