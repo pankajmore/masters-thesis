@@ -1,6 +1,67 @@
 \chapter{Introduction: SMT solvers and interfaces}
 \label{chap:intro}
 
+\hl{TOCHECK All this is new.}
+
+The Boolean satisfiability or SAT problem asks: \textit{Given a boolean
+formula with a set of variables in it, is there a way to assign each variable
+a value such that the formula becomes true?} The SAT problem is one of the
+cornerstones of computer science, with enormous theoretical and practical
+implications. It was the very first problem to be proved
+\textit{NP-complete}~\cite{sat-npcomplete}, and other problems were proved to
+be NP-complete by reducing them to SAT~\cite{karp21}.
+
+Yet, interest in solving so-called ``natural'' or ``real-world'' instances of
+SAT has remained. This is at least partly because a large number of practical
+problems are NP-complete and so can be \textit{reduced} to SAT. Here
+\textit{reduced} is as it is defined in~\cite{sat-npcomplete}: roughly, can an
+instance of the problem be turned into a boolean formula decided by SAT that's
+at most polynomially larger?
+
+\section{Solving SAT: DPLL}
+
+Solving SAT is generally restricted to boolean formulas in conjunctive normal
+form (CNF), which consists of \textit{clauses} of boolean
+\textit{literals}\footnote{The word \textit{literal} has two different
+technical meanings: in computer science, it represents a fixed value such as
+the number \texttt{1} or the string \texttt{"Hello"}. In mathematical logic,
+it means either an atom (variable: $p$) or its negation ($\neg p$). We use it
+here in this latter sense.} joined together with the OR operation ($\vee$),
+and these clauses joined together with the AND operation ($\wedge$). It is
+proved that the SAT problem for any boolean formula can be reduced to the SAT
+problem for formulas in CNF~\cite{karp21}.
+
+CNF formulas have useful properties, such as that they can be represented as a
+list of list of literals, and that showing even one of the clauses to be false
+is enough to show that the formula cannot be satisfied.
+
+The simplest way to solve SAT is with a basic backtracking algorithm
+(\Fref{fig:sat-backtracking}).
+
+\begin{program}
+
+\caption[A na\"{i}ve backtracking algorithm for SAT in Racket]
+{A na\"{i}ve backtracking algorithm for SAT in Racket.
+\texttt{substitute} substitutes the given value for the atom in the boolean
+formula, and returns an updated formula or \texttt{\#f}}
+
+\label{fig:sat-backtracking}
+\begin{minted}{scheme}
+; atoms is a list of variables to satisfy
+(define (solve-sat atoms formula)
+  (if (empty? atoms)
+      #t   ; no more atoms to substitute means SAT
+      (let*
+       ([atom (car atoms)]    ; pick the first atom
+        [rest-atoms (cdr atoms)]
+        [subst-true (substitute formula atom #t)]
+        [subst-false (substitute formula atom #f)]
+
+        (or (and subst-true (solve-sat rest-atoms subst-true))
+            (and subst-false (solve-sat rest-atoms subst-false)))))))
+\end{minted}
+\end{program}
+
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
 with assignments that satisfy these constraints, or, if possible, a proof that
