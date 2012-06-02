@@ -2,14 +2,9 @@
 all: thesis.pdf
 
 thesis.pdf: $(wildcard *.tex) citations.bib $(wildcard *.cls)
-	lualatex -shell-escape thesis
-	bibtex thesis
-	lualatex -shell-escape thesis
-	lualatex -shell-escape thesis
+	latexmk -dvi- -pdf -pdflatex='lualatex %O -shell-escape %S' thesis.tex
 
-.PHONY: clean
+.PHONY: all clean
 
 clean: 
-	-@echo "Cleaning generated files..."
-	-@rm -f thesis.aux thesis.bbl thesis.blg
-	-@rm -f thesis.log thesis.out thesis.pdf
+	latexmk -c
