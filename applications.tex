@@ -112,6 +112,7 @@ bounded recursive functions that reverse a list (using an accumulator).
     (smt:define-fun reversen ((xs IntList) (accum IntList)) IntList
       (if (zero? n)
           accum     ; reverse-0 always returns the accumulated list
+
           ; Recursive step: generate function for n-1
           (let ([subreverse (make-reverse-internal (sub1 n))])
             (ite/s (=/s xs nil/s)
@@ -119,6 +120,7 @@ bounded recursive functions that reverse a list (using an accumulator).
                    (subreverse (tail/s xs) (insert/s (head/s xs)
                                                      accum))))))
     reversen)
+
   (define reverse (make-reverse-internal n))
   (lambda (xs) (reverse xs nil/s)))
 \end{minted}
@@ -178,19 +180,22 @@ functions to append lists}
   (smt:define-fun qsort ((xs IntList)) IntList
     (if (zero? n)
         nil/s
+
         ; From here on is the usual definition of quicksort.
         (ite/s (=/s xs nil/s)
                nil/s
-               (let* ([subqsort (make-qsort (sub1 n))]
-                      [pivot (head/s xs)]
-                      [rest (tail/s xs)]
-                      [left-sorted
-                       (subqsort ((make-le (sub1 n)) pivot rest))]
-                      [right-sorted
-                       (subqsort ((make-gt (sub1 n)) pivot rest))])
-                 ((make-append (sub1 n)) left-sorted
-                                         (insert/s pivot
-                                                   right-sorted))))))
+
+               (let*
+                ([subqsort (make-qsort (sub1 n))]
+                 [pivot (head/s xs)]
+                 [rest (tail/s xs)]
+                 [left
+                  (subqsort ((make-le (sub1 n)) pivot rest))]
+                 [right
+                  (subqsort ((make-gt (sub1 n)) pivot rest))])
+
+                 ((make-append (sub1 n)) left
+                                         (insert/s pivot right))))))
   qsort)
 \end{minted}
 \end{program}
