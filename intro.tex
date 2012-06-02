@@ -32,9 +32,9 @@ proved that the SAT problem for any boolean formula can be reduced to the SAT
 problem for formulas in CNF~\cite{karp21}.
 
 CNF formulas have useful properties, such as that they can be represented as a
-set of clauses, that at any point a clause once shown true can be dropped from
-the set, and that showing even one of the clauses to be false is enough to
-show that the formula cannot be satisfied.
+set of clauses, that at any point a clause once satisfied (shown to be true)
+can be dropped from the set, and that showing even one of the clauses to be
+false is enough to show that the formula cannot be satisfied.
 
 The simplest way to solve SAT is with a basic backtracking algorithm
 (\Fref{fig:sat-backtracking}). The algorithm's recursive nature means it takes
@@ -68,17 +68,30 @@ There are two key insights that can be made at each step:
 
 \begin{enumerate}
 
-\item \textbf{Unit propagation.} \textit{If a clause contains just one
-literal, that literal has to be true.} For example, consider the set of
-clauses $\{a, a \vee b, \neg a \vee \neg c, b \vee c \vee d\}$. Since all the
-clauses need to be true, $a$ must be true. Letting this happen, we see that $a
-\vee b$ is true so it is dropped, and $\neg a \vee \neg c$ simply becomes
-$\neg c$, which means we are left with the clauses $\{\neg c, b \vee c \vee d\}$.
+\item \textbf{Unit propagation, or the one-literal clause rule.} \textit{If a
+clause contains just one literal, that literal has to be true.} For example,
+consider the set of clauses $\{a, a \vee b, \neg a \vee \neg c, b \vee c \vee
+d\}$. Since all the clauses need to be true, $a$ must be true. Letting this
+happen, we see that $a \vee b$ is true so it is dropped, and $\neg a \vee \neg
+c$ simply becomes $\neg c$, which means we are left with the clauses $\{\neg
+c, b \vee c \vee d\}$.
 
 At this point unit propagation can be applied once again on $c$, setting it to
 false. We are finally left with just the one clause $\{b \vee d\}$.
 
+\item \textbf{Pure literal elimination, or the affirmative-negative rule.}
+\textit{If the occurrences of a given variable $p$ are either all $p$ (or all
+$\neg p$), then $p$ can be assigned true (or false).} Consider the following
+set of clauses: $\{a \vee b, a \vee c, b \vee c \vee \neg d, \neg b \vee \neg
+c \vee d\}$. Since $a$ always appears in its positive form, we can assign $a$
+true without needing to consider the case where $a$ is false. Thus any clause
+that contains $a$ is satisfied and can be dropped. We are left with $\{b \vee
+c \vee \neg d, \neg b \vee \neg c \vee d\}$.
+
 \end{enumerate}
+
+The backtracking algorithm plus these two insights form the core of the
+Davis-Putnam-Logemann-Loveland (DPLL) algorithm~\cite{dpll1,dpll2}.
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
