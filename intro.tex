@@ -105,7 +105,7 @@ optimisation tricks to speed things up. They are highly efficient for
 from automated planning for robots or unmanned vehicles (via the
 \textit{satplan} method~\cite{satplan}), to dependency resolution in Linux
 package managers such as Zypper~\cite{zypper}. They have also been heavily used in 
-program analysis and verification, which is what brings us to our next section.
+program analysis and verification, which is what brings us to the next section.
 
 \section{SMT: SAT with a twist}
 
@@ -116,22 +116,37 @@ is also possible to represent integers as boolean variables via predicate
 abstraction~\cite{slam}, which is more efficient but potentially loses
 information.}.
 
-Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
-over booleans, integers, pure functions and other types, and either come up
-with assignments that satisfy these constraints, or, if possible, a proof that
-the constraints aren't satisfiable. Over the last few years, SMT solvers using
-DPLL(T)~\cite{dpllt:04} and other frameworks have come into their own and can
-solve a wide variety of problems using efficient heuristics. Problems they can
-attack range from simple puzzles like Sudoku and n-queens, to planning and
-scheduling, program analysis~\cite{Gulwani:08}, whitebox fuzz
-testing~\cite{Godefroid:08} and bounded model checking~\cite{Armando:09}.
+It was soon realised that pushing this step into the SAT solver would help.
+Since users would still be asking whether formulas were satisfiable, except
+with variables from more complex domains or \textit{theories}, this approach
+was dubbed Satisfiability Modulo Theories (SMT). Early SMT methods
+(e.g.~\cite{proc-verification,uclid}) \textit{eagerly} converted formulas to
+Boolean variables before handing them over to a SAT solver.
+
+Alternatively, one could substitute placeholder boolean variables for theory
+variables, supply this \textit{faux} boolean formula to a modified SAT solver,
+and write a separate program called a \textit{T-solver} that interacts
+\textit{on demand} with the SAT solver to deal with theory variables. The
+modified DPLL algorithm is called \textbf{DPLL(T)}~\cite{dpllt:04}, and this
+\textit{lazy} approach turns out to be far more efficient than eager methods.
+(For an more detailed description of eager and lazy SMT,
+see~\cite[Section~3.2]{abstract-dpll}).
+
+State-of-the-art SMT solvers like Z3~\cite{z3}, Yices~\cite{yices} and
+CVC3~\cite{cvc3} are based on DPLL(T). They allow users to specify
+constraints over booleans, integers, pure functions and other types, and
+either come up with assignments that satisfy these constraints, or, if
+possible, a proof that the constraints aren't satisfiable. SMT solvers have
+been used to solve problems in planning and scheduling, program
+analysis~\cite{Gulwani:08}, whitebox fuzz testing~\cite{Godefroid:08} and
+bounded model checking~\cite{Armando:09}.
 
 \section{Using SMT solvers}
 \label{sec:usingsmt}
 
 Yet, SMT solvers are only used by a small number of experts. It isn't hard to
 see why: the standard way for programs to interact with SMT solvers like
-Z3~\cite{z3}, Yices~\cite{yices} and CVC3~\cite{cvc3} is via powerful but
+ is via powerful but
 relatively arcane C APIs that require the users to know the particular
 solver's internals. For example, \Fref{fig:c-prop} lists a C program that
 asks Z3 whether the simple proposition $p \wedge \neg p$ is satisfiable.
