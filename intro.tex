@@ -1,7 +1,7 @@
 \chapter{Introduction: SMT solvers and interfaces}
 \label{chap:intro}
 
-\hl{TOCHECK All this is new.}
+\hl{TOCHECK Everything until the beginning of Section 1.3 is new.}
 
 The Boolean satisfiability or SAT problem asks: \textit{Given a boolean
 formula with a set of variables in it, is there a way to assign each variable
@@ -144,12 +144,12 @@ testing~\cite{Godefroid:08} and bounded model checking~\cite{Armando:09}.
 \section{Using SMT solvers}
 \label{sec:usingsmt}
 
-Yet, SMT solvers are only used by a small number of experts. It isn't hard to
-see why: the standard way for programs to interact with SMT solvers like
- is via powerful but
-relatively arcane C APIs that require the users to know the particular
-solver's internals. For example, \Fref{fig:c-prop} lists a C program that
-asks Z3 whether the simple proposition $p \wedge \neg p$ is satisfiable.
+After coming to know of the power SMT solvers have, the first question the
+intrepid programmer would ask is how to use one. Unfortunately, the standard
+way for programs to interact with SMT solvers is via powerful but relatively
+arcane C APIs that require the users to know the particular solver's
+internals. For example, \Fref{fig:c-prop} lists a C program that asks Z3
+whether the simple proposition $p \wedge \neg p$ is satisfiable.
 
 \begin{program}
 \caption{A C program to ask Z3 whether $p \wedge \neg p$ is satisfiable}
@@ -280,9 +280,9 @@ abstractions to enhance functionality.
 
 \subsection*{Summary}
 
-In this chapter, we saw what SMT solvers are, how they work, and the power
-that they have. We also saw why few programmers use them now, instead
-preferring to hand-code cumbersome search and backtracking algorithms.
+In this chapter, we saw what SAT and SMT solvers are, how they work, and the
+power that they have. We also saw why few programmers use SMT solvers now,
+instead preferring to hand-code cumbersome search and backtracking algorithms.
 
 \chapter{A new interface: \texttt{z3.rkt}}
 
