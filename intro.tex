@@ -90,18 +90,26 @@ c \vee \neg d, \neg b \vee \neg c \vee d\}$.
 \end{enumerate}
 
 The backtracking algorithm, plus these two insights applied at each step, form
-the core of the Davis-Putnam-Logemann-Loveland (DPLL)
-algorithm~\cite{dpll1,dpll2}. The DPLL algorithm, although over fifty years
-old, is tremendously successful and forms the core of many modern complete SAT
-solvers\footnote{A \textit{complete} SAT solver is one where a definitive
-answer is returned, whether a formula is satisfiable or not. There are also
-\textit{incomplete} SAT solvers which return an answer if the formula is
-satisfiable but do not return one if it is not. Examples include GSAT and
-WalkSat~\cite{walksat}.}, including Chaff~\cite{chaff}, GRASP~\cite{grasp} and
-MiniSat~\cite{minisat}. Of course, modern SAT solvers employ a large number of
-heuristic and optimisation tricks to speed things up.
+the Davis-Putnam-Logemann-Loveland (DPLL) algorithm~\cite{dpll1,dpll2}. The
+DPLL algorithm, although over fifty years old, is tremendously successful and
+forms the core of many modern complete SAT solvers\footnote{A
+\textit{complete} SAT solver is one where a definitive answer is returned,
+whether a formula is satisfiable or not. There are also \textit{incomplete}
+SAT solvers which return an answer if the formula is satisfiable but do not
+return one if it is not. Examples include GSAT and WalkSat~\cite{walksat}.},
+including Chaff~\cite{chaff}, GRASP~\cite{grasp} and MiniSat~\cite{minisat}.
+
+Of course, modern SAT solvers employ a large number of heuristic and
+optimisation tricks to speed things up. They are highly efficient for
+``real-world'' problems and are used in a wide variety of computer science fields,
+from automated planning for robots or unmanned vehicles (via the
+\textit{satplan} method~\cite{satplan}), to dependency resolution in Linux
+package managers such as Zypper~\cite{zypper}. They have also been heavily used in 
+program analysis and verification, which is what brings us to our next section.
 
 \section{SMT: SAT with a twist}
+
+
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
