@@ -109,7 +109,12 @@ program analysis and verification, which is what brings us to our next section.
 
 \section{SMT: SAT with a twist}
 
-
+Typically, program analysis tools that used SAT solvers would have to find a
+way to translate variables found in programs to boolean ones. For example, a
+32-bit integer could be encoded as a set of 32 boolean variables\footnote{It
+is also possible to represent integers as boolean variables via predicate
+abstraction~\cite{slam}, which is more efficient but potentially loses
+information.}.
 
 Satisfiability Modulo Theories (SMT) solvers let programmers specify constraints
 over booleans, integers, pure functions and other types, and either come up
