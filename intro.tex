@@ -107,7 +107,7 @@ from automated planning for robots or unmanned vehicles (via the
 package managers such as Zypper~\cite{zypper}. They have also been heavily used in 
 program analysis and verification, which is what brings us to the next section.
 
-\section{SMT: SAT with a twist}
+\section{SMT and DPLL(T): SAT with a twist}
 
 Typically, program analysis tools that used SAT solvers would have to find a
 way to translate variables found in programs to boolean ones. For example, a
@@ -120,7 +120,7 @@ It was soon realised that pushing this step into the SAT solver would help.
 Since users would still be asking whether formulas were satisfiable, except
 with variables from more complex domains or \textit{theories}, this approach
 was dubbed Satisfiability Modulo Theories (SMT). Early SMT methods
-(e.g.~\cite{proc-verification,uclid}) \textit{eagerly} converted formulas to
+(e.g.~\cite{proc-verification,uclid}) \textit{eagerly} simply converted formulas to
 Boolean variables before handing them over to a SAT solver.
 
 Alternatively, one could substitute placeholder boolean variables for theory
@@ -133,13 +133,13 @@ modified DPLL algorithm is called \textbf{DPLL(T)}~\cite{dpllt:04}, and this
 see~\cite[Section~3.2]{abstract-dpll}).
 
 State-of-the-art SMT solvers like Z3~\cite{z3}, Yices~\cite{yices} and
-CVC3~\cite{cvc3} are based on DPLL(T). They allow users to specify
-constraints over booleans, integers, pure functions and other types, and
-either come up with assignments that satisfy these constraints, or, if
-possible, a proof that the constraints aren't satisfiable. SMT solvers have
-been used to solve problems in planning and scheduling, program
-analysis~\cite{Gulwani:08}, whitebox fuzz testing~\cite{Godefroid:08} and
-bounded model checking~\cite{Armando:09}.
+CVC3~\cite{cvc3} are based on DPLL(T). They allow users to specify constraints
+over booleans, integers, real numbers, arrays, lists, trees, first-order
+predicates and other kinds of variables. They either come up with assignments
+that satisfy these constraints, or, if possible, a proof that the constraints
+aren't satisfiable. SMT solvers have been used to solve problems in planning
+and scheduling, program analysis~\cite{Gulwani:08}, whitebox fuzz
+testing~\cite{Godefroid:08} and bounded model checking~\cite{Armando:09}.
 
 \section{Using SMT solvers}
 \label{sec:usingsmt}
