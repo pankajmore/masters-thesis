@@ -296,9 +296,9 @@ We decided to attempt to solve this: our goal was to implement an SMT-LIB-like
 interface in a way that allowed for the same power as the C interface while
 appearing naturally integrated into a host language. Since SMT-LIB is {\em
 s-expression}-based, for the host language a Lisp dialect was a natural
-choice. We chose Racket~\cite{racket}, a popular dialect of
-Scheme~\cite{scheme-r5rs,scheme-r6rs},
-for our implementation, which we call \texttt{z3.rkt}. Racket has
+choice. We chose Microsoft Research's Z3~\cite{z3} as our SMT solver, and
+Racket~\cite{racket}, a popular dialect of Scheme~\cite{scheme-r5rs,scheme-r6rs},
+for our implementation. We call our implementation \textbf{\texttt{z3.rkt}}. Racket has
 extensive facilities for implementing new languages~\cite{Tobin-Hochstadt:11},
 not just for the interface to the solver, but also for the resulting tools
 that the solver would make possible.
