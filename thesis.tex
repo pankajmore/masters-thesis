@@ -20,7 +20,7 @@
 %   12pt, one-sided printing on a4 size paper
 \documentclass[openright,twoside]{iitkthesis}
 % For two-sided printing, with Chapter starting on odd-numbered pages,
-% use the following line instead:  
+% use the following line instead:
 %%\documentclass[openright,twoside]{iitbthesis}
 
 %=====================================================================
@@ -102,7 +102,7 @@
 %  Appendices shall be numbered in Roman Capitals (e.g. Appendix IV)
 
 %% \appendix
-%% \include{appendix_something}          
+%% \include{appendix_something}
 
 %=====================================================================
 % PUBLICATIONS
@@ -116,10 +116,11 @@
 
 
 \input{intro}
-\input{technical}
-\input{applications}
+\input{cloudhaskell}
 \input{related}
-\input{conclusions}
+% \input{applications}
+% \input{related}
+% \input{conclusions}
 
 \begin{singlespace}
 \cleardoublepage
@@ -129,5 +130,6 @@
 \printbibliography
 \nocite{*}
 \end{singlespace}
+
 
 \end{document}
