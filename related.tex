@@ -1,1 +1,66 @@
 \chapter{Related work}
+
+The overall field concerning hot code reloading in software is called
+Dynamic Software Updating (DSU). DSU is a field of research focused on
+safely upgrading programs while they are running {cite}. Although
+there is no existing research on DSU in the area of distributed
+functional programming, there is lot of work in the field of
+imperative and object oriented programming languages. We will briefly
+describe the main ideas and concepts found in the literature. For a
+detailed survey of DSU systems, {cite} is a very good resource.
+
+\section{Formal specification of DSU}
+
+Any running program can be thought of a tuple (\delta, P) . \delta is the
+current program state and P is the current program code. DSU systems
+transfer a running program (\delta, P) to (\delta', P'). The state
+must be transformed into a representation P' expects. This requires a
+state transformer function. Thus, DSU transforms (\delta, P) to
+(S(\delta), P). An update is considered valid if and only if the
+running program (S(\delta), P') can be reduced to a point tuple
+(\delta, P') that is reachable from the starting point of the new
+version of the program, ($\delta_{init}$, P').  For a formal
+description of this ``validity'' , please refer to {cite}.
+
+Although this is one formal definition for DSU, there is no consensus
+on the standard definition of DSU applicable in all cases. {cite}
+presents a list of definitions and requirements according to different
+authors.
+
+\section{Related ideas and techniques}
+
+In this section, we briefly discuss the most relevant concepts and
+techniques commonly used in the field of DSU systems.
+
+\subsection{Quiescence}
+
+
+\subsection{Binary Code Rewriting}
+
+Some authors mostly in Java and C propose rewriting of the binary code of the programs in memory. Fraby was one of the fir 
+\subsection{Proxies, Intermediaries and Indirection Levels}
+
+\subsection{Intrusion and Cooperation}
+
+\subsection{State Transfer}
+
+\subsection{Transformation Functions}
+
+\subsection{Using underlying facilities}
+
+\subsection{Version Coexistence}
+
+
+\section{DSU and Functional Programming}
+
+\subsection{Haskell}
+
+dons thesis
+safecopy
+
+\subsection{Erlang}
+
+
+erlang's unspecified upgrade behaviour
+Erlang requires no safety guarantees on updates cite.
+haskell reloading facility by don;s thesis

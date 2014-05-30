@@ -57,19 +57,26 @@ generated for incompatible versions. Ad hoc update mechanisms like
 using external tools for updating a cluster are neither safe nor
 efficient and simply restart the whole system.
 
-In this thesis, we aim to solve the problem of dynamically updating a
+In this thesis, we work on the problem of dynamically updating a
 running cloud haskell system with zero downtime.
 
 \subsection{The Motivation}
 
 \begin{itemize}
 \item Zero downtime is a fairly common requirement in large scale
-  distributed systems running critical business logic. Hardware
-  specific approaches , although possible, are cost prohibitive since
-  redundant hardware is needed to forward existing requests to the
-  previous version until the new version is online. Moreover, this
-  approach does not scale well  when the application is stateful because
-  state-migration and persistence is not taken into account.
+  distributed systems running critical business logic. This is
+  especially true in financial transaction systems, telephone
+  switches, airline traffic control systems and other mission
+  critical systems.
+\item Hot code reloading is less expensive than using redundant
+  hardware for managing upgrades. Loss of web service during
+  maintenance is no more acceptable and leads to lost revenues. For
+  example, Visa makes use of 21 main frames to run its
+  fifty-million-line transaction processing system. It is selectively
+  able to take machines down and upgrade them by preserving relevant
+  state in other online systems and complex state migration. This
+  approach is expensive as well as increases the complexity of
+  deploying updates.
 \item It helps in rapid prototyping and increases developer
   productivity by reducing the length of an iteration cycle. The
   ability to modify a running program and update it on the fly saves a
