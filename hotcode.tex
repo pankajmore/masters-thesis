@@ -1,0 +1,724 @@
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
+
+\chapter{An Attempt at Hot Code Reloading}
+
+While searching for relevant implementations of DSU in distributed
+functional programming, we found that Erlang's language level
+hot-swapping \cite{armstrong_concurrent_1993} is very similar to what
+we want to achieve. Since Cloud Haskell is already very similar in
+concept to Erlang and the approach of Cloud Haskell designers has been
+: ``If in doubt, do it the way Erlang does it'', our initial approach
+was to follow on the footsteps of Erlang. We tried to understand
+exactly how DSU works in Erlang. Even though there is no formal
+semantics for DSU in Erlang, we found that even the documentation
+\cite{_erlang_????} for implementation of Erlang and its specific
+behaviour during code upgrades was very light on details . Hence, in
+this thesis, we do not focus on what the formal semantics of Cloud
+Haskell should be. Imitating Erlang, we prototype, experiment and
+discuss various approaches and their trade-offs in the context of
+Cloud Haskell.
+
+The design goal of Cloud Haskell is to be highly decoupled from the
+runtime system (RTS). Our proposal tries to be independent of the RTS. We do not
+attempt to make changes to the current RTS. Although we depend on the
+object loading runtime facility of GHC, we are not keen on approaches
+which would require changes to the current GHC runtime system.
+
+The overall problem of supporting hot code reloading contains many
+different subtle sub-problems. The challenges in solving these
+problems have been discussed in the Ph.D. thesis by
+\citeauthor{epstein_functional_2011}
+\cite{epstein_functional_2011}. In our current approach, we only focus
+on the problem of upgrading a process running on a single node. This
+corresponds to the Erlang code-upgrade example shown in
+\autoref{sec:hotcode-erl}. Specifically, we do not consider the
+problem of coordinating upgrades, rollbacks, sending new code to
+remote nodes and the problem of communicating processes with
+incompatible versions. These are auxiliary problems but nevertheless
+important to the overall DSU experience.
+
+The smallest possible situation is : The ping pong example discussed
+in \autoref{sec:ping-pong}. How to update the server process
+from one version to the next? Before we can answer that question, we
+need to figure out how Erlang upgrades modules.
+
+\section{Understanding Erlang's Behaviour}
+
+According to the Erlang manual \cite{_erlang_????}, it keeps two versions
+of a module in memory i.e old and current. When a module is upgraded
+i.e new version of the module has to be brought into memory :
+
+\begin{itemize}
+\item the old version is discarded from memory
+\item processes running the old version get killed
+\item the current version is marked as old
+\item the new version becomes current
+\end{itemize}
+
+How is an update triggered in Erlang?
+
+\begin{itemize}
+\item Fully qualified function calls of the form ?MODULE:foo() always
+  refer to the \emph{current} version.
+\item Non qualified calls such as foo() refer to the version in which
+  they were originally invoked.
+\item Upgrading a running Erlang process reduces to compiling the
+  module, loading the new version into memory and finally calling the
+  process using its fully-qualified function name.
+\end{itemize}
+
+Before we start to sketch out how upgrades should work in Cloud
+Haskell, we try to find answers to the following questions:
+
+\begin{itemize}
+\item What kind of guarantees does Erlang provide with respect to
+  message reliability specifically during an upgrade?
+\item Why does Erlang keep two versions of every module in memory?
+\end{itemize}
+
+\subsection{Message loss during updates}
+
+The question is : What happens to messages in transit during an
+update? We figure out the answer by trying a simple experiment using
+the code shown in \autoref{fig:message-erl}. For a live demonstration
+of this experiment and related discussion, see
+\cite{more_messages_????}.
+
+\begin{program}
+\caption[Program to check message loss in Erlang]
+{Program to check message loss in Erlang during update}
+\label{fig:message-erl}
+
+\begin{minted}{erlang}
+-module('pingpong').
+-compile(export_all).
+-import(timer,[sleep/1]).
+
+
+start(N) ->
+    Server = spawn(?MODULE,server,[]),
+    _ = spawn(?MODULE,client,[Server,N,0]).
+
+server() ->
+    receive
+        upgrade ->
+            compile:file(?MODULE),
+            code:purge(?MODULE),
+            sleep(5000),
+            code:load_file(?MODULE),
+            ?MODULE:server();
+        {ping,Cid} ->
+            Cid ! pong,
+            server()
+    end.
+
+client(_,0,C) ->
+    io:format("DONE!~n"),
+    io:format("Received ~p Pongs!~n",[C]);
+client(Server,5,C) ->
+    io:format("Sending an upgrade message!~n"),
+    Server ! upgrade,
+    From = self(),
+    Server ! {ping,From},
+    io:format("Sent a PING!~n"),
+    receive
+        pong ->
+            io:format("Received a PONG!~n"),
+            client(Server,5-1,C+1)
+    end;
+client(Server,N,C) ->
+    sleep(1000),
+    From = self(),
+    Server ! {ping,From},
+    io:format("Sent a PING!~n"),
+    receive
+        pong ->
+            io:format("Received a PONG!~n"),
+            client(Server,N-1,C+1)
+    end.
+\end{minted}
+\end{program}
+
+See \autoref{fig:message-erl} for the program under discussion. When run
+with N = 10, the client sends an upgrade message to the server along
+with the \emph{Ping} message on its fifth transmission. The client
+sends 10 \emph{Pings} and receives 10 \emph{Pongs} confirming that no
+message was lost during upgrades.
+
+\subsection{Quiescence and Version Coexistence}
+
+In Erlang, can we update a process at arbitrary point in time?
+
+The answer is no. Upgrading requires a fully qualified function call
+to itself. The process is like a single thread. It cannot do any other
+computation like listening to a network socket or writing to a file
+while simultaneously calling its newer version. So, the property of
+\emph{quiescence} is trivial in Erlang by virtue of its isolated
+process model. Moreover, since processes can be upgraded at different
+points in time, there is a possibility of type mismatch when different
+versions communicate. Erlang leaves it to the programmer who has to
+make sure that incompatible versions can communicate by writing newer
+versions with backward-compatibility in mind.
+
+The smallest unit of compilation in Erlang is a module. If multiple
+processes are defined and running inside the same module, upgrading
+the module from one process should not force the other processes to
+upgrade also. In fact, multiple versions of a module can co-exist in
+Erlang. But, it is not possible to support processes which refer to
+arbitrarily old versions of the module. This would require keeping all
+past versions of a module in memory leading to space leaks with
+time. Erlang keeps only the current and the previous version of a
+module in memory. Older processes simply get killed. This is more
+reliable than just keeping only one version of a module. In single
+version scenario, other processes from the same module will get killed
+if one process gets upgraded. This will be terrible in terms of
+reliability.
+
+\section{An approach using plugins}
+\label{sec:approach1}
+
+Plugins \cite{_hackage:_????} provides an API for compiling and
+loading new code into a running Haskell application. Our first
+approach uses plugins to compile and load the next version.
+
+\subsection{The Plugins Way}
+
+When a Haskell program is made dynamic the \emph{plugins} way, it is
+re-factored so that the program state $\delta$ is passed as a
+parameter to the \emph{main} function of the program.  There is a
+minimal static core with no application logic. It only takes cares of
+loading the new version of the actual application. All the application
+logic sits in the \emph{dynamic} part which can be unloaded and
+reloaded by the static core.
+
+If there is no active reference to a value in Haskell, the GHC garbage
+collector reclaims it. While reloading the dynamic application, we
+need to keep a reference to the program state. The only safe place is
+the static core. Since the whole dynamic application is reloaded, we
+must return the execution to the static core with a reference to
+the program state that needs to persisted.  We need to define a
+function called \emph{upgrade} in the static core which is called from
+the dynamic application when it is ready to upgrade. The dynamic
+application passes the state to \emph{upgrade} function. In the
+\emph{upgrade} function, the old version is unloaded. The next version
+is compiled and loaded. The upgrade function can apply transformation
+functions to transform the state for the new version. The \emph{main}
+symbol of dynamic application is resolved. The (transformed) state is
+passed to the \emph{new main}. The dynamic application receives the
+state, short-circuits the initialization steps and continues running
+the upgraded version.
+
+This is the recommended way to refactor existing applications to make
+them dynamic.
+
+\subsection{A minimal plugins example}
+
+We show a small example in \autoref{fig:minimal.plugins} of a Hello
+World Haskell program called Plugin.hs which is continuously upgraded
+every 5 seconds after its execution round. You can change the code of
+Plugin.hs and see the changes after every upgrade in 5 seconds when
+its new version is executed again.
+
+The Main.hs module of the application is a static core responsible for
+reloading the actual application. In this case, the application
+specific code is defined in Plugin.hs. The upgrade function is defined
+in the static core. It re-compiles Plugin.hs, loads it into memory and
+then calls the main of Plugin.hs by passing it the value
+\emph{upgrade}. The main of Plugin.hs runs and calls upgrade at the end
+which upgrades the Plugin application. We can make changes to the
+Plugin.hs file and those changes will be reflected in the output after
+the next upgrade.
+
+In this example, we do not preserve any state of Plugin.hs but it is
+possible to change the type of upgrade to pass the state of Plugin.hs to
+the static core. When upgrade executes, it has a reference to the old
+state , it can transform the old state if required and then can call
+the new version with (transformed) state.
+
+\begin{program}
+\caption[A minimal plugins example]
+{A minimal plugins example}
+\label{fig:minimal.plugins}
+
+\begin{minted}{haskell}
+
+-- Plugin.hs
+module Plugin (main) where
+
+type DynamicT = IO ()
+
+main :: DynamicT -> IO ()
+main upgrade = do
+--  print "New version Now!"
+  putStrLn "Hello World!"
+  putStrLn $ show $ thing
+  threadDelay 5000000 -- wait a while
+  upgrade
+
+thing :: String
+thing = "42"
+
+-- Main.hs
+module Main (main) where
+
+import System.Plugins
+import Control.Monad
+
+upgrade :: IO ()
+upgrade = do
+  r <- makeAll "Plugin.hs" []
+  case r of
+    MakeFailure msgs -> putStrLn "failed to make" >> print msgs
+    MakeSuccess mc fp -> do
+      mv <- load fp [] [] "main"
+      case mv of
+        LoadFailure msgs -> putStrLn "fail" >> print msgs
+        LoadSuccess m v -> print "Upgrade Done!" >> v upgrade
+
+type DynamicT = IO ()
+
+main :: IO ()
+main = upgrade
+
+\end{minted}
+\end{program}
+
+\subsection{DSU in Ping Pong}
+\label{sec:dsu-pingpong}
+
+We take the experiment performed in Erlang in
+\autoref{fig:message-erl} and port it to Cloud Haskell. Similar to the
+minimal plugins example, we have a static core here in Main.hs with an
+upgrade function to upgrade our server process. We cannot follow the
+\emph{plugins} way in Cloud Haskell. We cannot extract the state of
+all processes and preserve that state in the static core. Moreover, we
+must then short-circuit all the transport initialization and process
+creation steps and resume from where we left of.  To be able to do
+this, we need a mechanism to extract the message queues and set the
+message queues for individual processes. This is currently not
+possible in Cloud Haskell.  Therefore, we try a different approach. We
+directly pass the top level symbol that we want to return to after
+upgrading , i.e \emph{server} in this case. See \autoref{fig:dsu1} and
+\autoref{fig:dsu2} for the source code of our approach.
+
+When we run this program, we find that on the fifth \emph{Ping} from
+the client, the server \emph{upgrades} and shows the changes made but
+then the whole application crashes silently probably due to a
+segmentation fault. There is no debug
+info. We believe the problem is probably related to keeping only one
+version of the module in memory. To investigate this, we look into the
+source of \emph{plugins} package. We find that it indeed does not
+support loading multiple versions of the same module. Hence, the
+client process cannot continue since it does not have the old object
+code in memory. Its \emph{program counter} is pointing to a
+junk value. It is like \emph{sweeping the rug from underneath}.
+
+If we can change the loading mechanism in \emph{plugins} to support
+\emph{version coexistence}, it would resolve the above problem. This
+is essential if we want to have reliable code reloading in Cloud
+Haskell.
+
+The other problem with this approach is that the message queues and
+internal process state is not being shared with the \emph{new server}.
+This is because the \emph{new server} is not called from inside the
+\emph{old server}. It is called from the upgrade function which does
+not have any internal state of the \emph{old server}. This is like
+running a new server from scratch without state persistence.
+
+\begin{program}
+\caption[DSU in Ping Pong - PingPong.hs]
+{DSU in Ping Pong - PingPong.hs}
+\label{fig:dsu1}
+\begin{minted}{haskell}
+-- PingPong.hs
+module PingPong where ...
+...
+
+server :: DynamicT -> Process ()
+server st = do
+    (cid,x) :: (ProcessId,Int) <- expect
+    send cid x
+    case x of
+      5 -> do
+        liftIO $ st
+      _ -> do
+        server st
+
+client :: DynamicT -> Int -> ProcessId -> Process ()
+client st 10 sid = return ()
+client st c sid = do
+  me <- getSelfPid
+  send sid (me,c)
+  (v :: Int) <- expect
+  client st (c+1) sid
+
+ignition :: DynamicT -> Process ()
+ignition st= do
+    sid <- spawnLocal $ server st
+    cid <- spawnLocal $ client st 0 sid
+    liftIO $ threadDelay 100000 -- wait a while
+
+type DynamicT = IO ()
+main :: DynamicT -> IO ()
+main st = do
+    Right transport <- createTransport "127.0.0.1" "8080"
+                            defaultTCPParameters
+    node <- newLocalNode transport initRemoteTable
+    runProcess node (ignition st)
+    closeTransport transport
+
+\end{minted}
+\end{program}
+
+\begin{program}
+\caption[DSU in Ping Pong - Main.hs]
+{DSU in Ping Pong - Main.hs}
+\label{fig:dsu2}
+\begin{minted}{haskell}
+
+-- Main.hs
+upgrade :: IO ()
+upgrade = do
+  r <- makeAll "PingPong.hs" []
+  case r of
+    MakeFailure msgs -> putStrLn "failed to make" >> print msgs
+    MakeSuccess mc fp -> do
+      mv <- load fp [] [] "server"
+      case mv of
+        LoadFailure msgs -> putStrLn "fail" >> print msgs
+        LoadSuccess m v -> do
+        unloadAll m
+        v upgrade
+
+
+type DynamicT = IO ()
+
+main :: IO ()
+main = upgrade
+
+\end{minted}
+\end{program}
+
+\subsection{Unresolved Problems}
+\label{sec:unresolved}
+
+In the approach described in \autoref{sec:dsu-pingpong}, we evaluate the
+call to \emph{new} server at end of upgrade. The type of upgrade is
+\begin{minted}{haskell}
+type DynamicT = IO ()
+upgrade :: IO ()
+\end{minted}
+The type of server is
+\begin{minted}{haskell}
+server :: DynamicT -> Process ()
+server :: IO () -> Process ()
+server upgrade :: Process ()
+\end{minted}
+This should result in a compile time type error. But in practice, it
+compiles successfully. This is because of two reasons. The return type
+of \emph{load} is polymorphic. The GHC dynamic loader
+is unsafe. \cite{stewart_dynamic_2010}. The compiler does not know the
+type of the symbol \emph{server} since it does not have the code of
+\emph{server} at compile time. Since, the return type of load is
+polymorphic, and the type of the \emph{upgrade} is IO (), the types
+now become :
+\begin{minted}{haskell}
+type DynamicT = IO ()
+upgrade :: IO ()
+-- v refers to the value of symbol ``server''
+v upgrade :: a
+-- the type is instantiated to IO ()
+v upgrade :: IO ()
+v :: IO () -> IO ()
+server :: IO () -> IO ()
+\end{minted}
+
+Type checking succeeds, but it will most likely crash at run-time
+since the type of \emph{server} is obviously wrong.  The strange
+behaviour is that if we execute the upgrade with no change in the
+source code, the server continues to receive \emph{Pings} and process
+them after it is upgraded. This requires further investigation and the
+Cloud Haskell maintainers have been notified about this issue.
+
+Due to segfaults in the previous approach, we try a different
+approach where the \emph{new server} is called from the old
+server. How do we do this? Instead of calling the new server inside
+upgrade, we can return it as a value and let the \emph{old server}
+call the \emph{new server}.  This is better than previous
+approach. Calling a Process () monadic action inside another Process
+() action leads to sharing of the message queues and internal process
+state. The \emph{bind} operator of the Process monad hides all the
+\emph{magic}. This is how a recursive loop in server works. When the
+server calls itself at the end, it \emph{shares} the internal state
+with the new call.
+
+Lets try to see if we can return \emph{new server} to the \emph{old
+  server} after upgrading the code. Then we can call the \emph{new
+  server} from the \emph{old}. This will be exactly similar to calling
+\emph{new server} in Erlang. There, we just used a fully qualified
+function call and the Erlang VM redirected it to the new version
+automatically.
+
+For this problem, we reason using types. \emph{upgrade} now returns
+the value of \emph{new server}. But it might not have any value to
+return in case there is no reloading (no change in the source
+code. So, we wrap it inside a \emph{Maybe}. The new type of upgrade
+becomes
+\begin{minted}{haskell}
+type DynamicT = IO (Maybe a)
+upgrade :: DynamicT
+upgrade :: IO (Maybe a)
+\end{minted}
+\emph{upgrade} returns Nothing in case of no change in code or Just
+server otherwise. Here, a is instantiated to the \emph{type} of
+server. The type of server is
+\begin{minted}{haskell}
+server :: DynamicT -> Process ()
+\end{minted}
+This leads to the following type for DynamicT:
+\begin{minted}{haskell}
+type DynamicT = IO (Maybe (DynamicT -> Process ()) )
+\end{minted}
+
+On compiling, we get a ``Cycle in type synonym declarations'' error
+which is expected. In this approach, this problem is yet to be
+resolved. Since, we have to return the value of the process and the
+process also need to take \emph{upgrade} as a parameter, there is a
+cyclic dependency which cannot be easily resolved.
+
+We reason that if we want to return the symbol for \emph{new server}
+inside the \emph{old server}, we cannot get around ``Cycle in type
+synonym declarations'' error:
+
+\begin{itemize}
+\item We cannot import the \emph{plugins} library in the dynamic part
+  i.e PingPong.hs. When PingPong.hs is reloaded, all the modules
+  imported by PingPong.hs are unloaded and reloaded in turn. Since
+  upgrade function needs functions from the \emph{plugins} library, we
+  cannot define the \emph{upgrade} function in the dynamic
+  application. The only place we can define it is in Main.hs.
+\item Since we need upgrade function inside the server process, can we
+  import Main.hs into PingPong.hs and use \emph{upgrade} function
+  without passing it as a parameter to server? This is not possible
+  because we cannot import Main.hs into PingPong.hs. When PingPong.hs
+  is unloaded, it will unload Main which will unload
+  \emph{plugins}. If \emph{plugins} module is unloaded, we cannot
+  reload anything.
+\item The only remaining way is to pass the \emph{upgrade} function as
+  a value to PingPong.hs functions. But if \emph{upgrade} function
+  needs to return the value of the \emph{new server}, we would get a
+  ``Cycle in type synonym declarations'' error.
+\item If we do not insist that \emph{upgrade} function return the
+  value of the \emph{new server}. The above error will be resolved. In
+  fact, if the upgrade function \emph{never returns}, but simply
+  evaluates the value of the \emph{new server}, it will be
+  correct. This is the approach taken in the \emph{plugins} way. But,
+  in this approach, we cannot share the internal process state with
+  the \emph{new server}. We need to capture all the process state and
+  pass it to upgrade.
+\item To follow the plugins way and solve the problem of ``Cycle in
+  type synonym declarations'', Cloud Haskell needs to be internally
+  restructured, so that it is possible to get and set internal
+  process state.
+\end{itemize}
+
+In the current approach, what happens to the message queue of the
+process that is being upgraded? If we do not make changes to the
+source, the old version and the new version are same. The call to
+upgrade reloads the same code and calls the \emph{new server}. This
+works as expected and continues to send and receive messages.  The
+messages received during the upgrade remain in the message queue and
+are acted upon by the new server. This implies that there is no
+message loss during the upgrade. If we make changes to the source, the
+application crashes due to reasons discussed above. But we believe
+that the message queue is still receiving the messages during the
+upgrade and no messages are lost. The reason for this is the
+following. Every node has a special process called the \emph{node controller}.
+Among other things, it is responsible for receiving the messages on
+behalf of all process running on the node and then forward it to the
+mailbox of the intended process. As long as the process is not killed,
+its mailbox will not be garbage collected. Since messages are received
+by the \emph{node controller} running on another thread, during
+an upgrade, the incoming messages will not be discarded.
+
+There are a couple of issues that we identified while using \emph{plugins}
+library for this project:
+
+\begin{itemize}
+\item The \emph{plugins} library uses \emph{.hi files} for module
+  information and \emph{dependency chasing}. It parses these \emph{.hi
+    files} before loading.new version. This parsing is broken in 64
+  bit architecture. Our example in \ref{fig:dsu1} has been tested to
+  work only on X86 architecture.
+\item \emph{unload} function, which is used to unload modules from the
+  address space, does not work in GHC 7.6. Although this has been
+  fixed for static builds by Simon Marlow in the next version of GHC,
+  static builds would be longer to build and take more space in general.
+\item Since \emph{plugins} library uses GHC compiler to do run-time
+  compilation, it currently links the GHC compiler code to the static
+  core. This increases the size of the application binary from less
+  than 1 MB to anywhere from 37 to 66 MB. There is no way current to
+  prevent the compiler from being linked.
+\end{itemize}
+
+Overall the GHC runtime infrastructure for code-reloading and
+\emph{plugins} in particular are not widely used in production and
+have subtle bugs which are hard to debug because of lack of good error
+messages and logging. Based on our experience, we feel that there is
+lot of scope for improvement in this area.
+
+
+\section{The Proxy Approach}
+\label{sec:proxy-approach}
+
+In this section, we will briefly discuss about a different approach
+based on the ideas of indirection or proxies based on
+\autoref{sec:proxy-related}.
+
+In our previous approaches, we did not
+extract the state of a process. Its state was implicit in the Process
+Monad (which is itself implemented as a State Monad). The internal
+state of the Process is \emph{serializable}. Hence, it should be
+possible to define accessor functions like getState and setState to
+receive and set the state of a process.
+
+\subsection{Cloning a Process}
+
+Based on the primitives defined earlier, a function can be defined
+which will create a \emph{clone} of the old process with all the state
+intact and continue executing from the new version of the module. But
+the old process instance must be killed before the new process
+executes. From the perspective of the node controller, it should
+conceptually look as if the process never died.
+
+The type for clone will be:
+\begin{minted}{haskell}
+oldProcess :: a -> Process ()
+clone :: ProcessState -> a -> Process ()
+\end{minted}
+Here ProcessState is the internal state of the old process. ``a''
+refers to the type (polymorphic) of the parameters passed to the old
+process.
+
+\subsection{Relocating a process}
+
+We can build a primitive for migrating a process between nodes.
+The type for relocate will be:
+\begin{minted}{haskell}
+relocate :: (Serializable a) => a -> NodeId -> Process ()
+\end{minted}
+
+Here, ``a'' is instantiated to the type of internal process state
+(which was extracted using getState). It takes the NodeId to which it
+should relocate.  This approach has the advantage that it allows us to
+transparently relocate processes based on the resource usage and load
+on different nodes.
+
+\subsection{Addressability and Roaming}
+
+To send a message to a process, only its ProcessId is required. Its
+NodeId is part of its ProcessId type. When a process sends a message
+to another process, the message is sent based on the NodeId
+of the ProcessId. The node-controller forwards the message to the
+intended process. When a process relocates, it migrates from its
+\emph{home node} to a \emph{remote node}. This is similar to
+\emph{roaming of users} in cellular networks. In cellular networks,
+roaming users are monitored by building tables of addresses of
+currently roaming users.
+
+Before a process relocates, it must notify its \emph{home
+  node-controller} about its new NodeId. Moreover, every
+node-controller should have a roaming registry, which keeps track of
+these movements. When other processes, send a message to a relocated
+process, the messages are initially sent to the home node-controller
+since the ProcessId they have refers to the old NodeId.  The home
+node-controller needs to forward this message to the current
+node-controller where the process resides. This leads to one level of
+indirection.  But if the nodes are far apart, this increases the
+latency and bandwidth requirements. This indirection cannot be
+reduced. Since there might be old values of ProcessId lingering in the
+system which would refer to the home NodeId.
+
+One problem is that this approach has a race condition. What would
+happen if a process which has initially relocated once, relocates
+again. After the relocation, it notifies its home node-controller. But
+before the notification reaches home node-controller, say a message
+expected for this process reaches its home node-controller. Since the
+home node-controller's entry has not been updated, it will forward the
+message to the node from where it just relocated. This message will be
+lost since the process does not exist on that node. One simple
+solution is that before relocating, the process should also notify its
+local node-controller about the change. This node controller can then
+keep the (from -> to) mapping of its relocation until a timer
+expires. An appropriate worst case expiry time can be just a few
+seconds. The only disadvantage is that now there can be a chain of
+hops that a message has to go through if the process is hopping
+through a series of different nodes very rapidly. But this scenario is
+purely hypothetical and unlikely to happen in a real problem.
+
+\subsection{Other Problems}
+
+Another major problem is decoding.  We cannot used the old functions
+of \emph{Binary} typeclass in the target node to decode the incoming
+state. The Binary instance to decode the new state does not yet exist
+on the target node if it has not been upgraded. Hence, decoding will
+fail on the target node. This problem has been well documented in
+\cite{epstein_functional_2011}. One possible solution is to make it
+the user's problem. The user should provide transformer functions
+which take the \emph{ByteString} of the old version and convert it to
+the new version.  Even in Erlang, \emph{gen server} provides callbacks
+so that the developer can provide these state transformation functions
+himself. These transformation functions must exist even in nodes
+which are yet to be updated. One way to achieve this is to break the
+update into two steps. First update only contains these transformation
+functions and no type changes. In the next update, type changes can be
+sent which can be decoded by using the transformation functions sent
+in the first update.
+
+The other problem is about sending the code of new version to remote
+nodes.  Although code can be sent to other nodes as a new type of
+message, the main issue is to compile and bring it to the address
+space of the application.  Here, the only solution is to build every
+instance with \emph{plugins} support so that new code can be evaluated
+at run-time using \emph{plugins} \emph{eval} function. There is no
+easy way to do it without depending on \emph{plugins}
+library. Therefore, it is necessary that the \emph{plugins} library be
+robust and support version co-existence.
+
+\subsection{Evaluation}
+\label{sec:proxyeval}
+
+Our initial approach does not work well even in a single node
+scenario. There is no state persistence as the upgraded process does
+not share the state of the old process. But in the \emph{proxy}
+approach, we propose primitives to extract the internal state of a
+process which allows us to create clones of a process. This also
+enables us to get around problem of ``cyclic type synonyms''. We do
+not need to pass the value of \emph{new server} to the \emph{old
+  server}. We can instead clone the process using the internal state
+of the server. This approach is also suitable in writing applications
+in the \emph{plugins} way where all internal state of processes need
+to be extracted and preserved via static core during upgrades.
+
+One disadvantage is the indirection of messages to home nodes when the
+processes have moved to a new node. Although, we propose solutions to
+this problem, it increases the complexity of the
+node-controller. Since the node-controller is a very important part of
+managing the node, any additional complexity which is not very
+essential should not be added to the node-controller. The performance
+of the node-controller is also the bottleneck in many
+cases. Increasing its complexity might lead to poor performance. In
+the \emph{proxy} approach, we still rely on \emph{plugins} for dynamic
+linking and code loading. There are issues with \emph{plugins} which
+have been discussed in \autoref{sec:unresolved}.
+
+Building and maintaining internal tables of roaming processes might
+require lot of changes to the source code of node-controller. We have
+not focused on how to implement these changes in Cloud Haskell. This
+is left as a future work. We hope that the high-level ideas discussed
+in this approach guide in implementing the \emph{proxy} approach. An
+implementation based on this approach needs be built to at least
+demonstrate the feasibility of this approach.
